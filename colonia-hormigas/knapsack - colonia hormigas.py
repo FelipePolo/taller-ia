@@ -2,10 +2,10 @@ import csv
 import time
 
 items = []
-capacidad_maxima = 64500
+capacidad_maxima = 7800
 
-with open('./input5.csv', 'r') as file:
-    csv_reader = csv.reader(file)
+with open('./input2.csv', 'r') as file:
+    csv_reader = csv.reader(file, delimiter=";")
     next(csv_reader) # Saltear la primera fila (etiquetas)
 
     # Leer los valores de la segunda y tercera columna de cada fila

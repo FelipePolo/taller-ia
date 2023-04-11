@@ -42,7 +42,7 @@ class Individual:
         return 0
 
 
-MAX_KNAPSACK_WEIGHT = 64500
+MAX_KNAPSACK_WEIGHT = 7800
 CROSSOVER_RATE = 0.53
 MUTATION_RATE = 0.013
 REPRODUCTION_RATE = 0.15
@@ -50,8 +50,8 @@ REPRODUCTION_RATE = 0.15
 items = []
 
 # Abrir el archivo CSV y leer los valores
-with open('./input5.csv', 'r') as file:
-    csv_reader = csv.reader(file)
+with open('./input2.csv', 'r') as file:
+    csv_reader = csv.reader(file, delimiter=";")
     next(csv_reader) # Saltear la primera fila (etiquetas)
 
     # Leer los valores de la segunda y tercera columna de cada fila
