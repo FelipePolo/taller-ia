@@ -2,7 +2,7 @@ import csv
 import time
 import matplotlib.pyplot as plt
 
-
+best_values = []
 def read_data(filename):
     items = []
     with open(filename, 'r') as file:
@@ -21,6 +21,7 @@ def ant_colony_optimization(items, max_weight, num_ants=50, evaporation=0.5, alp
     # Inicializar variables de tiempo y mejor solución
     start_time = time.time()
     best_solution = []
+    
     best_value = 0
 
     for iteration in range(num_iterations):
@@ -54,6 +55,7 @@ def ant_colony_optimization(items, max_weight, num_ants=50, evaporation=0.5, alp
             best_solution = best_solution_current
             best_value = best_value_current
             iteration_winner = iteration
+        best_values.append(best_value)
 
     # Calcular tiempo total y peso total de la mochila
     total_time = time.time() - start_time
@@ -62,7 +64,7 @@ def ant_colony_optimization(items, max_weight, num_ants=50, evaporation=0.5, alp
     return best_value, best_solution, total_weight, total_time, iteration_winner
 
 # Ejemplo de uso
-filename = './input2.csv'
+filename = 'C:/Users/E1Ganso/Downloads/Taller mochila/knapsack - colonia hormigas/input2.csv'
 max_weight = 7800
 items = read_data(filename)
 best_value, best_solution, total_weight, total_time, iteration_winner = ant_colony_optimization(items, max_weight)
@@ -73,9 +75,9 @@ print(f"Peso total mochila: {total_weight}")
 print(f"Tiempo: {total_time}")
 print(f"Iteracion ganadora: {iteration_winner}")
 
-# Gráfica de convergencia
-plt.plot(best_solution)
-plt.title("Convergencia - ACO")
-plt.xlabel("Iteración")
-plt.ylabel("Valor de la función de costo")
+# Graficar convergencia
+plt.plot(range(1, len(best_values) + 1), best_values)
+plt.xlabel("Iteraciones")
+plt.ylabel("Mejor valor")
+plt.title("Convergencia del algoritmo de colonia de hormigas")
 plt.show()
