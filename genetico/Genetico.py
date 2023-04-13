@@ -1,48 +1,11 @@
 import csv
 import random
 import time
+from Item import Item
+from Individual import Individual
 from typing import List
 
-
-class Item:
-    def __init__(self, name, weight, value):
-        self.name = name
-        self.weight = weight
-        self.value = value
-
-
-class Individual:
-    def __init__(self, bits: List[int]):
-        self.bits = bits
-    
-    def __str__(self):
-        total_weight = sum([
-            bit * item.weight
-            for item, bit in zip(items, self.bits)
-        ])
-        return f"{self.bits} (Peso Mochila: {total_weight})"    
-
-    def __hash__(self):
-        return hash(str(self.bits))
-    
-    def fitness(self) -> float:
-        total_value = sum([
-            bit * item.value
-            for item, bit in zip(items, self.bits)
-        ])
-
-        total_weight = sum([
-            bit * item.weight
-            for item, bit in zip(items, self.bits)
-        ])
-
-        if total_weight <= MAX_KNAPSACK_WEIGHT:
-            return total_value
-        
-        return 0
-
-
-MAX_KNAPSACK_WEIGHT = 7800
+MAX_WEIGHT = 7800
 CROSSOVER_RATE = 0.53
 MUTATION_RATE = 0.013
 REPRODUCTION_RATE = 0.15
@@ -128,10 +91,8 @@ def next_generation(population: List[Individual]) -> List[Individual]:
     while len(next_gen) < len(population):
         children = []
 
-        # we run selection and get parents
         parents = selection(population)
 
-        # reproduction
         if random.random() < REPRODUCTION_RATE:
             children = parents
         else:
