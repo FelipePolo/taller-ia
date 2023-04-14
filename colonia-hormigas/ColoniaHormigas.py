@@ -9,8 +9,11 @@ def read_csv_file(file_name):
     with open(file_name, 'r') as file:
         csv_reader = csv.reader(file, delimiter=";")
         next(csv_reader) # omitir la primera fila (encabezados)
+        firtsRow = True
         for row in csv_reader:
-            capacity = int(row[0])
+            if(firtsRow):
+                capacity = int(row[0])
+                firtsRow = False
             value = int(row[1])
             weight = int(row[2])
             objects.append((capacity, value, weight))
@@ -51,8 +54,9 @@ def transition_probabilities(current_object, objects, pheromone_matrix, visibili
         if j not in visited:
             numerator = (pheromone_matrix[current_object][j] ** q) * (visibility_matrix[current_object][j] ** q)
             denominator = sum([(pheromone_matrix[current_object][k] ** q) * (visibility_matrix[current_object][k] ** q) for k in range(n) if k not in visited])
-            probabilities[j] = numerator / denominator
-            total_prob += probabilities[j]
+            if(denominator != 0): 
+                probabilities[j] = numerator / denominator
+                total_prob += probabilities[j]
     if total_prob == 0:
         return [1/n for i in range(n)]
     return [p/total_prob for p in probabilities]
@@ -83,6 +87,16 @@ def calculate_value(solution, objects):
             break
     return value
 
+# Calcular el peso total de una solución
+def calculate_weigth(solution, objects):
+    weight = 0
+    for i in solution:
+        if weight + objects[i][2] <= objects[0][0]:
+            weight += objects[i][2]
+        else:
+            break
+    return weight
+
 # Actualizar la matriz de feromonas con la solución construida
 def update_pheromone_matrix(pheromone_matrix, solutions, objects, evaporation):
     n = len(objects)
@@ -91,7 +105,6 @@ def update_pheromone_matrix(pheromone_matrix, solutions, objects, evaporation):
             pheromone_matrix[i][j] *= (1 - evaporation)
     for solution in solutions:
         value = calculate_value(solution, objects)
-        weight = sum([objects[i][2] for i in solution])
         for i in range(len(solution)-1):
             pheromone_matrix[solution[i]][solution[i+1]] += (1.0/value)
 
@@ -110,24 +123,27 @@ def ant_colony_optimization(objects, pheromone, evaporation, ants, iterations, q
     convergence_curve = []
     start_time = time.time()
     for i in range(iterations):
-        print(f"Iteration {i+1} of {iterations}")
+        print(f"Generacion {i+1} de {iterations}")
         best_solution, solutions = run_iteration(objects, pheromone_matrix, visibility_matrix, ants, q)
         update_pheromone_matrix(pheromone_matrix, solutions, objects, evaporation)
         best_value = calculate_value(best_solution, objects)
+        best_weigt = calculate_weigth(best_solution, objects)
         convergence_curve.append(best_value)
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"\nBest solution: {best_solution}")
+    print(f"\nMejor camino solucion: {best_solution}")
     print(f"Best value: {best_value}")
-    print(f"Elapsed time: {elapsed_time} seconds")
-    print(f"Number of iterations: {iterations}")
+    print(f"Best Peso: {best_weigt}")
+    print(f"Tiempo de ejecucion: {elapsed_time} en segundos")
+    print(f"Numero de generaciones: {iterations}")
     plt.plot(convergence_curve)
-    plt.xlabel('Iterations')
-    plt.ylabel('Best value')
+    plt.xlabel('generaciones')
+    plt.ylabel('Best values')
     plt.show()
 
 # Ejemplo de uso
 if __name__ == '__main__':
-    objects = read_csv_file('C:/Users/E1Ganso/Downloads/taller-ia-master/colonia-hormigas/input2.csv')
+    objects = read_csv_file('./input2.csv')
+    print(objects)
     pheromone, evaporation, ants, iterations, q, max_weight = init_params(objects)
     ant_colony_optimization(objects, pheromone, evaporation, ants, iterations, q, max_weight)
