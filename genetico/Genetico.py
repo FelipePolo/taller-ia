@@ -109,6 +109,12 @@ def solve_knapsack() -> Individual:
     print("Tiempo empleado:", elapsed_time)
     print("Número de iteraciones:", i + 1)
 
+    plt.plot(avg_fitnesses)
+    plt.title("Grafica de Convergencia")
+    plt.xlabel('Generación')
+    plt.ylabel('Estado físico promedio')
+    plt.show()
+
     return population[0]
 
 if __name__ == '__main__':
@@ -120,3 +126,4 @@ if __name__ == '__main__':
             solutions.append(solution)
             print("Valor Total Mochila: " + str(solution.fitness()))
         print()
+    
