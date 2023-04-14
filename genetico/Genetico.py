@@ -15,6 +15,17 @@ def evaluar_solucion(solucion, capacidad_maxima, datos):
         return 0
     else:
         return valor_total
+    
+ # Función para calcular peso
+def evaluar_peso_solucion(solucion, capacidad_maxima, datos):
+    peso_total = 0
+    for i in range(len(solucion)):
+        if solucion[i] == 1:
+            peso_total += datos[i][1]
+    if peso_total > capacidad_maxima:
+        return 0
+    else:
+        return peso_total
 
 # Función de selección de torneo
 def seleccion_torneo(poblacion, aptitudes, tam_torneo):
@@ -94,6 +105,7 @@ def algoritmo_genetico(datos, capacidad_maxima, tam_poblacion, tasa_mutacion, ta
     print(f"Número de iteraciones: {num_iteraciones}")
     print(f"Mejor solución: {mejor_solucion}")
     print(f"Valor de la mejor solución: {valor_mejor_solucion}")
+    print(f"mejor peso de la solución: {evaluar_peso_solucion(mejor_solucion, capacidad_maxima, datos)}")
 
     # Graficar la convergencia
     plt.plot(mejores_aptitudes)
@@ -102,16 +114,35 @@ def algoritmo_genetico(datos, capacidad_maxima, tam_poblacion, tasa_mutacion, ta
     plt.ylabel("Mejor aptitud")
     plt.show()
 
+def read_file(file_name):
+    items = []
+    max_weight = int; comp = False;
+    with open(file_name, newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=";")
+        next(reader, None)
+        for row in reader:
+            if(comp == False):
+                max_weight = int(row[0]);
+                items.append([int(row[1]), int(row[2])])
+                comp = True;
+            else:
+                items.append([int(row[1]), int(row[2])])
+    return max_weight, items
+
 # Programa principal
 if __name__ == '__main__':
     # Función para leer los datos del archivo CSV
     
+    #datos, capacidad_maxima = read_file('./input2.csv')
     datos = []
-    with open('C:/Users/E1Ganso/Downloads/taller-ia-master/genetico/input2.csv', 'r') as archivo_csv:
+    with open('./input2.csv', 'r') as archivo_csv:
         lector_csv = csv.DictReader(archivo_csv, delimiter=";")
+        firstRow = True
         for fila in lector_csv:
             datos.append((int(fila['valor']), int(fila['peso'])))
-            capacidad_maxima = int(fila['capacidad_maxima'])
+            if (firstRow == True):
+                capacidad_maxima = int(fila['capacidad_maxima'])
+                firstRow = False
 
     # Configurar parámetros del algoritmo
     tam_poblacion = 50
