@@ -1,129 +1,126 @@
 import csv
 import random
-import time
-from Item import Item
-from Individual import Individual
 import matplotlib.pyplot as plt
-from constants import *
-from typing import List
+import time
 
-items = []
+# Función de evaluación para calcular la aptitud de una solución candidata
+def evaluar_solucion(solucion, capacidad_maxima, datos):
+    peso_total = 0
+    valor_total = 0
+    for i in range(len(solucion)):
+        if solucion[i] == 1:
+            peso_total += datos[i][1]
+            valor_total += datos[i][0]
+    if peso_total > capacidad_maxima:
+        return 0
+    else:
+        return valor_total
 
-with open('./input2.csv', 'r') as archivo:
-    lector_csv = csv.reader(archivo, delimiter=";")
-    next(lector_csv)
+# Función de selección de torneo
+def seleccion_torneo(poblacion, aptitudes, tam_torneo):
+    seleccionados = []
+    for i in range(len(poblacion)):
+        torneo = random.sample(range(len(poblacion)), tam_torneo)
+        seleccionado = torneo[0]
+        for j in range(1, tam_torneo):
+            if aptitudes[torneo[j]] > aptitudes[seleccionado]:
+                seleccionado = torneo[j]
+        seleccionados.append(poblacion[seleccionado])
+    return seleccionados
 
-    for fila in lector_csv:
-        nombre = fila[0]
-        valor = int(fila[1])
-        peso = int(fila[2])
+# Función de cruce de un solo punto
+def cruce_un_punto(padres):
+    punto_cruce = random.randint(1, len(padres[0])-1)
+    hijo1 = padres[0][:punto_cruce] + padres[1][punto_cruce:]
+    hijo2 = padres[1][:punto_cruce] + padres[0][punto_cruce:]
+    return [hijo1, hijo2]
 
-        item = Item(nombre, peso, valor)
-        items.append(item)
+# Función de mutación
+def mutacion(solucion, tasa_mutacion):
+    for i in range(len(solucion)):
+        if random.random() < tasa_mutacion:
+            if solucion[i] == 0:
+                solucion[i] = 1
+            else:
+                solucion[i] = 0
+    return solucion
 
+# Función principal del algoritmo genético
+def algoritmo_genetico(datos, capacidad_maxima, tam_poblacion, tasa_mutacion, tasa_cruce, tam_torneo, num_iteraciones):
+    # Crear población inicial de soluciones aleatorias
+    poblacion = []
+    for i in range(tam_poblacion):
+        solucion = [random.randint(0, 1) for j in range(len(datos))]
+        poblacion.append(solucion)
 
+    # Inicializar la lista de aptitudes de la población
+    aptitudes = [evaluar_solucion(solucion, capacidad_maxima, datos) for solucion in poblacion]
 
-def generate_initial_population(count=6) -> List[Individual]:
-    population = []
+    # Inicializar la lista para almacenar la mejor aptitud de cada iteración
+    mejores_aptitudes = []
 
-    for _ in range(count):
-        bits = [random.choice([0, 1]) for _ in items]
-        individual = Individual(bits, items)
-        population.append(individual)
+    # Repetir hasta que se alcance el número máximo de iteraciones o se encuentre una solución aceptable
+    for i in range(num_iteraciones):
+        # Seleccionar padres para la próxima generación utilizando el método de selección de torneo
+        padres = seleccion_torneo(poblacion, aptitudes, tam_torneo)
 
-    return population
+        # Cruzar los padres seleccionados utilizando el operador de cruce de un solo punto
+        hijos = []
+        for j in range(0, tam_poblacion, 2):
+            if random.random() < tasa_cruce:
+                hijos.extend(cruce_un_punto([padres[j], padres[j+1]]))
+            else:
+                hijos.extend([padres[j], padres[j+1]])
 
+        # Mutar algunas soluciones seleccionadas aleatoriamente en la población
+        hijos = [mutacion(hijo, tasa_mutacion) for hijo in hijos]
 
-def selection(population: List[Individual]) -> List[Individual]:
-    random.shuffle(population)
+        # Evaluar la aptitud de cada solución en la nueva población
+        aptitudes_hijos = [evaluar_solucion(solucion, capacidad_maxima, datos) for solucion in hijos]
 
-    parents = []
-    for i in range(0, len(population), 2):
-        parent1 = population[i] if population[i].fitness() > population[i + 1].fitness() else population[i + 1]
-        parent2 = population[i + 1] if population[i + 1].fitness() > population[i].fitness() else population[i]
-        parents.extend([parent1, parent2])
+        # Reemplazar la población actual con la nueva población
+        poblacion = hijos
+        aptitudes = aptitudes_hijos
 
-    return parents
+        # Almacenar la mejor aptitud de esta iteración
+        mejores_aptitudes.append(max(aptitudes))
 
+    # Seleccionar la mejor solución de la última población como la solución óptima
+    mejor_solucion = poblacion[aptitudes.index(max(aptitudes))]
+    valor_mejor_solucion = max(aptitudes)
 
-def crossover(parents: List[Individual]) -> List[Individual]:
-    N = len(parents[0].bits)
-    mid = N // 2
+    # Mostrar resultados
+    print(f"Tiempo de ejecución: {time.time()-start_time} segundos")
+    print(f"Número de iteraciones: {num_iteraciones}")
+    print(f"Mejor solución: {mejor_solucion}")
+    print(f"Valor de la mejor solución: {valor_mejor_solucion}")
 
-    child1 = parents[0].bits[:mid] + parents[1].bits[mid:]
-    child2 = parents[1].bits[:mid] + parents[0].bits[mid:]
-
-    return [Individual(child1, items), Individual(child2, items)]
-
-def mutate(individuals: List[Individual]) -> List[Individual]:
-    for individual in individuals:
-        for i in range(len(individual.bits)):
-            if random.random() < MUTATION_RATE:
-                individual.bits[i] = ~individual.bits[i]
-
-
-def next_generation(population: List[Individual]) -> List[Individual]:
-    next_gen = []
-
-    while len(next_gen) < len(population):
-        parents = selection(population)
-
-        if random.random() < REPRODUCTION_RATE:
-            children = parents
-        else:
-            children = crossover(parents)
-            mutate(children)
-
-        next_gen.extend(children)
-
-    return next_gen[:len(population)]
-
-def print_generation(population: List[Individual]):
-    total_fitness = sum(individual.fitness() for individual in population)
-    avg_fitness = total_fitness / len(population)
-
-    for individual in population:
-        print(individual.bits, individual.fitness())
-
-    print()
-    print("Average fitness:", avg_fitness)
-    print("-" * 32)
-
-def average_fitness(population: List[Individual]) -> float:
-    return sum([i.fitness() for i in population]) / len(population)
-
-def solve_knapsack() -> Individual:
-    population = generate_initial_population()
-    start_time = time.time()
-    avg_fitnesses = []
-
-    for i in range(500):
-        avg_fitnesses.append(average_fitness(population))
-        population = next_generation(population)
-        if population[0].fitness() > 0:
-            break
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-
-    print("Tiempo empleado:", elapsed_time)
-    print("Número de iteraciones:", i + 1)
-
-    plt.plot(avg_fitnesses)
-    plt.title("Grafica de Convergencia")
-    plt.xlabel('Generación')
-    plt.ylabel('Estado físico promedio')
+    # Graficar la convergencia
+    plt.plot(mejores_aptitudes)
+    plt.title("Convergencia del algoritmo genético")
+    plt.xlabel("Número de iteración")
+    plt.ylabel("Mejor aptitud")
     plt.show()
 
-    return population[0]
-
+# Programa principal
 if __name__ == '__main__':
-    solutions = []
-    for i in range(10):
-        solution = solve_knapsack()
-        print(solution)
-        if solution.fitness() != 0:
-            solutions.append(solution)
-            print("Valor Total Mochila: " + str(solution.fitness()))
-        print()
+    # Función para leer los datos del archivo CSV
     
+    datos = []
+    with open('C:/Users/E1Ganso/Downloads/taller-ia-master/genetico/input2.csv', 'r') as archivo_csv:
+        lector_csv = csv.DictReader(archivo_csv, delimiter=";")
+        for fila in lector_csv:
+            datos.append((int(fila['valor']), int(fila['peso'])))
+            capacidad_maxima = int(fila['capacidad_maxima'])
+
+    # Configurar parámetros del algoritmo
+    tam_poblacion = 50
+    tasa_mutacion = 0.1
+    tasa_cruce = 0.8
+    tam_torneo = 5
+    num_iteraciones = 100
+
+    # Ejecutar el algoritmo genético
+    start_time = time.time()
+    algoritmo_genetico(datos, capacidad_maxima, tam_poblacion, tasa_mutacion, tasa_cruce, tam_torneo, num_iteraciones)
+
