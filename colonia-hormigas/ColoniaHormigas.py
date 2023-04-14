@@ -2,82 +2,54 @@ import csv
 import time
 import matplotlib.pyplot as plt
 
-best_values = []
-def read_data(filename):
-    items = []
-    with open(filename, 'r') as file:
-        csv_reader = csv.reader(file, delimiter=";")
-        next(csv_reader) # Saltear la primera fila (etiquetas)
+items = []
+with open('./input2.csv', 'r') as file:
+    csv_reader = csv.reader(file, delimiter=";")
+    next(csv_reader) # Saltear la primera fila (etiquetas)
+    for row in csv_reader:
+        items.append((int(row[1]), int(row[2])))
 
-        # Leer los valores de la segunda y tercera columna de cada fila
-        for row in csv_reader:
-            items.append((int(row[1]), int(row[2]))) 
-    return items
+num_hormigas, capacidad_maxima, evaporacion, alfa, beta, q = 50, 7800, 0.2, 1, 2, 100
+feromonas = [1] * len(items)
+mejor_solucion, mejor_solucion_valor, iteracion_mejor_solucion = [], 0, 0
+valores_convergencia = []
 
-def ant_colony_optimization(items, max_weight, num_ants=50, evaporation=0.5, alpha=1, beta=2, q=100, num_iterations=100):
-    # Inicializar feromonas en los items
-    pheromones = [1] * len(items)
+tiempo_inicio = time.time()
+for iteracion in range(100):
+    soluciones_hormigas = []
+    for i in range(num_hormigas):
+        solucion_hormiga, peso_actual, valor_actual = [], 0, 0
+        while peso_actual < capacidad_maxima:
+            probabilidades = [(j, feromonas[j] ** alfa * (valor / peso) ** beta) for j, (valor, peso) in enumerate(items) if j not in solucion_hormiga and peso_actual + peso <= capacidad_maxima]
+            if not probabilidades:
+                break
+            seleccionado = max(probabilidades, key=lambda x: x[1])
+            solucion_hormiga.append(seleccionado[0])
+            peso_actual += items[seleccionado[0]][1]
+            valor_actual += items[seleccionado[0]][0]
+        soluciones_hormigas.append((solucion_hormiga, valor_actual))
 
-    # Inicializar variables de tiempo y mejor solución
-    start_time = time.time()
-    best_solution = []
-    
-    best_value = 0
+    feromonas_nuevas = [0] * len(items)
+    for solucion_hormiga, valor_hormiga in soluciones_hormigas:
+        for item_index in solucion_hormiga:
+            feromonas_nuevas[item_index] += q / valor_hormiga
+    feromonas = [(1 - evaporacion) * f + evaporacion * f_nueva for f, f_nueva in zip(feromonas, feromonas_nuevas)]
 
-    for iteration in range(num_iterations):
-        # Inicializar las soluciones de las hormigas
-        solutions = []
-        for i in range(num_ants):
-            solution = []
-            weight = 0
-            value = 0
-            while weight < max_weight:
-                probabilities = [(j, pheromones[j] ** alpha * (item[0] / item[1]) ** beta) for j, item in enumerate(items) if j not in solution and weight + item[1] <= max_weight]
-                if not probabilities:
-                    break
-                # Seleccionar el item con la probabilidad más alta
-                selected_item = max(probabilities, key=lambda x: x[1])[0]
-                solution.append(selected_item)
-                weight += items[selected_item][1]
-                value += items[selected_item][0]
-            solutions.append((solution, value))
+    mejor_solucion_actual = max(soluciones_hormigas, key=lambda x: x[1])
+    if mejor_solucion_actual[1] > mejor_solucion_valor:
+        mejor_solucion_valor, mejor_solucion, iteracion_mejor_solucion = mejor_solucion_actual[1], mejor_solucion_actual[0], i
+    valores_convergencia.append(mejor_solucion_valor)
 
-        # Actualizar feromonas en los items
-        pheromones_new = [0] * len(items)
-        for solution, value in solutions:
-            for item_index in solution:
-                pheromones_new[item_index] += q / value
-        pheromones = [(1 - evaporation) * p + evaporation * p_new for p, p_new in zip(pheromones, pheromones_new)]
+tiempo_total = time.time() - tiempo_inicio
 
-        # Guardar la mejor solución encontrada
-        best_solution_current, best_value_current = max(solutions, key=lambda x: x[1])
-        if best_value_current > best_value:
-            best_solution = best_solution_current
-            best_value = best_value_current
-            iteration_winner = iteration
-        best_values.append(best_value)
+print(f"Valor total mochila: {mejor_solucion_valor}")
+print(f"Indice items: {mejor_solucion}")
+print(f"Peso total mochila: {sum(peso for valor, peso in [items[i] for i in mejor_solucion])}")
+print(f"Tiempo: {tiempo_total}")
+print(f"Índice de la iteración donde se encontró la mejor solución: {iteracion_mejor_solucion}")
 
-    # Calcular tiempo total y peso total de la mochila
-    total_time = time.time() - start_time
-    total_weight = sum(items[i][1] for i in best_solution)
-
-    return best_value, best_solution, total_weight, total_time, iteration_winner
-
-# Ejemplo de uso
-filename = 'C:/Users/E1Ganso/Downloads/Taller mochila/knapsack - colonia hormigas/input2.csv'
-max_weight = 7800
-items = read_data(filename)
-best_value, best_solution, total_weight, total_time, iteration_winner = ant_colony_optimization(items, max_weight)
-
-print(f"Valor total mochila: {best_value}")
-print(f"Indice items: {best_solution}")
-print(f"Peso total mochila: {total_weight}")
-print(f"Tiempo: {total_time}")
-print(f"Iteracion ganadora: {iteration_winner}")
-
-# Graficar convergencia
-plt.plot(range(1, len(best_values) + 1), best_values)
-plt.xlabel("Iteraciones")
-plt.ylabel("Mejor valor")
-plt.title("Convergencia del algoritmo de colonia de hormigas")
+plt.plot(valores_convergencia)
+plt.xlabel('Iteración')
+plt.ylabel('Mejor solución encontrada')
+plt.title('Gráfica de convergencia')
 plt.show()
